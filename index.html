@@ -1,0 +1,1197 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mama's Bingo Helfer</title>
+    <style>
+        :root {
+            --ndr-blue: #003774;
+            --highlight: #e74c3c;
+            --match: #2ecc71;
+            --bg: #f4f4f9;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg);
+            margin: 0;
+            padding: 20px;
+            text-align: center;
+            font-size: 18px;
+        }
+
+        h1 {
+            color: var(--ndr-blue);
+            font-size: 2.5rem;
+            margin: 10px 0;
+        }
+
+        h2 {
+            font-size: 2rem;
+        }
+
+        h3 {
+            font-size: 1.8rem;
+        }
+
+        p {
+            font-size: 1.4rem;
+        }
+
+        /* --- Container & Buttons --- */
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        button {
+            background-color: var(--ndr-blue);
+            color: white;
+            border: none;
+            padding: 20px 35px;
+            font-size: 1.6rem;
+            font-weight: bold;
+            border-radius: 12px;
+            cursor: pointer;
+            margin: 10px;
+            min-height: 70px;
+            touch-action: manipulation;
+        }
+
+        button.delete {
+            background-color: #e74c3c;
+            font-size: 1.3rem;
+            padding: 15px 25px;
+            min-height: 60px;
+        }
+        button:active { transform: scale(0.95); }
+
+        /* --- BINGO Header --- */
+        .bingo-header {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 5px;
+            margin-bottom: 5px;
+            font-weight: bold;
+            font-size: 2rem;
+            color: var(--ndr-blue);
+        }
+
+        .bingo-header-cell {
+            text-align: center;
+            padding: 10px;
+            background: #003774;
+            color: white;
+            border-radius: 8px;
+        }
+
+        /* --- Grid Styles --- */
+        .bingo-ticket-wrapper {
+            margin: 20px 0;
+        }
+
+        .bingo-ticket {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 8px;
+            padding: 15px;
+            background: #eee;
+            border-radius: 10px;
+        }
+
+        .bingo-cell {
+            aspect-ratio: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: white;
+            border: 3px solid #ccc;
+            font-weight: bold;
+            font-size: 2rem;
+            border-radius: 8px;
+            min-height: 80px;
+        }
+
+        /* Eingabemodus */
+        input.bingo-input {
+            width: 100%;
+            height: 100%;
+            text-align: center;
+            font-size: 2rem;
+            font-weight: bold;
+            border: none;
+            outline: none;
+            padding: 5px;
+        }
+
+        input.bingo-input.error {
+            background-color: #ffcccc;
+            border: 2px solid #e74c3c;
+        }
+
+        /* Spielmodus */
+        .bingo-cell.matched {
+            background-color: var(--match);
+            color: white;
+            border-color: var(--match);
+        }
+
+        /* --- Live Controls --- */
+        #live-controls {
+            background: white;
+            padding: 20px;
+            border-bottom: 3px solid #ddd;
+            display: none;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+
+        #live-controls label {
+            font-size: 1.6rem;
+            font-weight: bold;
+        }
+
+        #drawn-number-input {
+            font-size: 2.5rem;
+            width: 120px;
+            text-align: center;
+            border: 4px solid var(--ndr-blue);
+            border-radius: 12px;
+            padding: 15px;
+            margin: 10px 0;
+        }
+
+        /* Scroll to Top Button */
+        #scroll-to-top {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background: var(--ndr-blue);
+            color: white;
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            border: none;
+            font-size: 2rem;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(0, 55, 116, 0.4);
+            z-index: 1000;
+            display: none;
+            transition: all 0.3s ease;
+            padding: 0;
+            min-height: unset;
+        }
+
+        #scroll-to-top:hover {
+            transform: scale(1.1);
+            box-shadow: 0 6px 20px rgba(0, 55, 116, 0.6);
+        }
+
+        #scroll-to-top:active {
+            transform: scale(0.95);
+        }
+
+        #scroll-to-top.visible {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Gezogene Zahlen Display */
+        #drawn-numbers-display {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 10px;
+        }
+
+        #drawn-numbers-display h4 {
+            font-size: 1.6rem;
+            margin: 0 0 15px 0;
+            color: var(--ndr-blue);
+        }
+
+        /* Meta-Navigation für Mini-Lose */
+        #meta-navigation {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 10px;
+        }
+
+        #meta-navigation h4 {
+            font-size: 1.6rem;
+            margin: 0 0 15px 0;
+            color: var(--ndr-blue);
+        }
+
+        .meta-tickets-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(70px, 1fr));
+            gap: 10px;
+        }
+
+        .meta-ticket {
+            position: relative;
+            cursor: pointer;
+            touch-action: manipulation;
+            transition: all 0.2s;
+            background: white;
+            border-radius: 8px;
+            padding: 5px;
+            border: 2px solid #ddd;
+        }
+
+        .meta-ticket:hover {
+            transform: scale(1.05);
+            box-shadow: 0 2px 10px rgba(0, 55, 116, 0.3);
+        }
+
+        .meta-ticket:active {
+            transform: scale(0.98);
+        }
+
+        .meta-ticket-label {
+            text-align: center;
+            font-size: 0.9rem;
+            font-weight: bold;
+            color: var(--ndr-blue);
+            margin-bottom: 3px;
+        }
+
+        .meta-ticket-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 2px;
+            aspect-ratio: 1;
+        }
+
+        .meta-cell {
+            aspect-ratio: 1;
+            background: #e0e0e0;
+            border-radius: 2px;
+        }
+
+        .meta-cell.hit {
+            background: var(--match);
+        }
+
+        .meta-ticket.has-bingo {
+            border-color: var(--match);
+            border-width: 3px;
+        }
+
+        .meta-ticket.has-bingo .meta-ticket-label {
+            color: var(--match);
+        }
+
+        .drawn-numbers-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(70px, 1fr));
+            gap: 10px;
+        }
+
+        .drawn-number-cell {
+            position: relative;
+            aspect-ratio: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--ndr-blue);
+            color: white;
+            font-size: 1.8rem;
+            font-weight: bold;
+            border-radius: 10px;
+            cursor: pointer;
+            touch-action: manipulation;
+            transition: all 0.2s;
+            min-height: 70px;
+        }
+
+        .drawn-number-cell:active {
+            transform: scale(0.95);
+        }
+
+        .drawn-number-cell.delete-pending {
+            background: #e74c3c;
+        }
+
+        .drawn-number-cell.delete-pending::after {
+            content: '🗑️';
+            position: absolute;
+            font-size: 2.5rem;
+            opacity: 0.3;
+            pointer-events: none;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        .bingo-alert {
+            background-color: var(--highlight);
+            color: white;
+            padding: 25px;
+            margin-top: 15px;
+            font-size: 2.2rem;
+            font-weight: bold;
+            border-radius: 15px;
+            animation: pulse 1s infinite;
+            display: none;
+            cursor: pointer;
+            position: relative;
+            user-select: none;
+        }
+
+        #add-number-btn {
+            background-color: var(--match);
+        }
+
+        button:disabled {
+            background-color: #95a5a6;
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+
+        input:disabled {
+            background-color: #ecf0f1;
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+
+        /* Verschiedene Bingo-Level */
+        .ticket-single-bingo {
+            background: linear-gradient(135deg, #2ecc71, #27ae60) !important;
+            box-shadow: 0 0 30px rgba(46, 204, 113, 0.8) !important;
+        }
+
+        .ticket-double-bingo {
+            background: linear-gradient(135deg, #f39c12, #e67e22) !important;
+            box-shadow: 0 0 30px rgba(243, 156, 18, 0.8) !important;
+        }
+
+        .ticket-triple-bingo {
+            background: linear-gradient(135deg, #e74c3c, #c0392b) !important;
+            box-shadow: 0 0 40px rgba(231, 76, 60, 1) !important;
+            animation: rainbow 2s infinite;
+        }
+
+        @keyframes rainbow {
+            0% { box-shadow: 0 0 40px rgba(231, 76, 60, 1); }
+            33% { box-shadow: 0 0 40px rgba(243, 156, 18, 1); }
+            66% { box-shadow: 0 0 40px rgba(46, 204, 113, 1); }
+            100% { box-shadow: 0 0 40px rgba(231, 76, 60, 1); }
+        }
+
+        .error-message {
+            background-color: #ffcccc;
+            color: #c0392b;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 10px;
+            font-size: 1.3rem;
+            font-weight: bold;
+            border: 2px solid #e74c3c;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+
+        .hidden { display: none; }
+
+        /* iPhone Pro Max optimiert */
+        @media (max-width: 500px) {
+            body {
+                padding: 10px;
+            }
+            .container {
+                padding: 15px;
+            }
+            .bingo-cell {
+                min-height: 60px;
+                font-size: 1.6rem;
+            }
+            input.bingo-input {
+                font-size: 1.6rem;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container" id="setup-screen">
+    <h1>🎟️ Los-Verwaltung</h1>
+    <p>Hier die Zahlen vom Los eintragen.</p>
+
+    <div id="tickets-container"></div>
+
+    <button onclick="addNewTicket()">+ Neues Los hinzufügen</button>
+    <button id="debug-random-ticket" onclick="addRandomTicket()" style="background-color: #9b59b6; display: none;">🎲 Zufälliges Los</button>
+    <br><br>
+    <hr>
+    <button onclick="startShow()" style="background-color: var(--match); font-size: 1.8rem;">📺 Sendung starten!</button>
+    <button onclick="resetAll()" style="background-color: #e74c3c; font-size: 1.4rem;">🗑️ Alle Daten löschen</button>
+</div>
+
+<div class="container hidden" id="game-screen">
+    <div id="live-controls">
+        <label>Gezogene Zahl:</label><br>
+        <input type="number" id="drawn-number-input" inputmode="numeric" min="1" max="75">
+        <button id="add-number-btn" onclick="addNumber()">Eintragen</button>
+
+        <div id="drawn-numbers-display"></div>
+
+        <div id="meta-navigation">
+            <h4>Lose-Übersicht</h4>
+            <div id="meta-tickets-container" class="meta-tickets-grid"></div>
+        </div>
+    </div>
+
+    <div id="bingo-notification" class="bingo-alert" onclick="closeBingoNotification()">🎉 BINGO GEFUNDEN! 🎉</div>
+
+    <h2>Aktuelle Lose</h2>
+    <div id="game-tickets-display"></div>
+
+    <button onclick="endShow()" style="margin-top: 30px; background-color: #e67e22; font-size: 1.6rem;">📺 Sendung beenden</button>
+    <button onclick="backToSetup()" style="margin-top: 30px; background-color: #7f8c8d;">Zurück zur Bearbeitung</button>
+</div>
+
+<button id="scroll-to-top" onclick="scrollToTop()" title="Nach oben">↑</button>
+
+<script>
+    // Struktur: Array von Objekten. Jedes Objekt hat ein 2D Array (5x5)
+    let tickets = [];
+    let drawnNumbers = [];
+    let isDebugMode = false;
+    let isGameRunning = false;
+    let bingoNotificationClosed = false; // Track ob Benachrichtigung manuell geschlossen wurde
+    const MAX_DRAWN_NUMBERS = 22; // Limit für gezogene Zahlen
+    let deleteTimers = {}; // Speichert Timer für automatisches Zurücksetzen
+
+    // Spalten-Regeln: B I N G O
+    const columnRules = [
+        { name: 'B', min: 1, max: 15 },
+        { name: 'I', min: 16, max: 30 },
+        { name: 'N', min: 31, max: 45 },
+        { name: 'G', min: 46, max: 60 },
+        { name: 'O', min: 61, max: 75 }
+    ];
+
+    // --- LOCAL STORAGE ---
+
+    function saveToLocalStorage() {
+        localStorage.setItem('bingoTickets', JSON.stringify(tickets));
+        localStorage.setItem('bingoDrawnNumbers', JSON.stringify(drawnNumbers));
+        localStorage.setItem('bingoGameRunning', JSON.stringify(isGameRunning));
+    }
+
+    function loadFromLocalStorage() {
+        const savedTickets = localStorage.getItem('bingoTickets');
+        const savedDrawn = localStorage.getItem('bingoDrawnNumbers');
+        const savedGameRunning = localStorage.getItem('bingoGameRunning');
+
+        if (savedTickets) {
+            tickets = JSON.parse(savedTickets);
+            // Tickets UI neu aufbauen
+            tickets.forEach(ticket => {
+                recreateTicketUI(ticket);
+            });
+        }
+
+        if (savedDrawn) {
+            drawnNumbers = JSON.parse(savedDrawn);
+        }
+
+        if (savedGameRunning) {
+            isGameRunning = JSON.parse(savedGameRunning);
+            if (isGameRunning) {
+                // Sendung war aktiv, wieder aktivieren
+                document.getElementById('setup-screen').classList.add('hidden');
+                document.getElementById('game-screen').classList.remove('hidden');
+                document.getElementById('live-controls').style.display = 'block';
+                renderDrawnNumbers();
+                renderGameTickets();
+
+                // Prüfe ob 22-Zahlen-Limit erreicht ist
+                updateInputState();
+            }
+        }
+    }
+
+    function recreateTicketUI(ticket) {
+        const ticketDiv = document.createElement('div');
+        ticketDiv.className = 'ticket-wrapper';
+        ticketDiv.id = `ticket-setup-${ticket.id}`;
+
+        let html = `<h3>Los #${tickets.indexOf(ticket) + 1} <button class="delete" onclick="removeTicket(${ticket.id})">Löschen</button></h3>`;
+
+        // B I N G O Header
+        html += `<div class="bingo-header">`;
+        html += `<div class="bingo-header-cell">B</div>`;
+        html += `<div class="bingo-header-cell">I</div>`;
+        html += `<div class="bingo-header-cell">N</div>`;
+        html += `<div class="bingo-header-cell">G</div>`;
+        html += `<div class="bingo-header-cell">O</div>`;
+        html += `</div>`;
+
+        html += `<div class="bingo-ticket">`;
+
+        // Spaltenweise Eingabe-Reihenfolge
+        for (let c = 0; c < 5; c++) {
+            for (let r = 0; r < 5; r++) {
+                const tabindex = c * 5 + r + 1;
+                const value = ticket.grid[r][c] || '';
+                html += `<div class="bingo-cell" style="grid-column: ${c+1}; grid-row: ${r+1};">
+                    <input type="number"
+                           inputmode="numeric"
+                           class="bingo-input"
+                           data-ticket="${ticket.id}"
+                           data-r="${r}"
+                           data-c="${c}"
+                           tabindex="${tabindex}"
+                           placeholder="-"
+                           min="1"
+                           max="99"
+                           maxlength="2"
+                           value="${value}"
+                           onblur="validateInput(this); saveToLocalStorage();"
+                           oninput="limitInput(this)">
+                </div>`;
+            }
+        }
+        html += `</div>`;
+        html += `<div id="error-${ticket.id}" class="error-message hidden"></div>`;
+
+        ticketDiv.innerHTML = html;
+        document.getElementById('tickets-container').appendChild(ticketDiv);
+    }
+
+    function resetAll() {
+        if (confirm('⚠️ ACHTUNG! Alle Lose und gezogenen Zahlen werden gelöscht. Fortfahren?')) {
+            localStorage.removeItem('bingoTickets');
+            localStorage.removeItem('bingoDrawnNumbers');
+            localStorage.removeItem('bingoGameRunning');
+            tickets = [];
+            drawnNumbers = [];
+            isGameRunning = false;
+            document.getElementById('tickets-container').innerHTML = '';
+            document.getElementById('bingo-notification').style.display = 'none';
+            renderDrawnNumbers();
+            alert('✅ Alle Daten wurden gelöscht!');
+        }
+    }
+
+    // --- DEBUG MODE ---
+
+    function checkDebugMode() {
+        isDebugMode = window.location.hash === '#debug';
+        if (isDebugMode) {
+            document.getElementById('debug-random-ticket').style.display = 'inline-block';
+            console.log('🐛 Debug-Modus aktiviert');
+        }
+    }
+
+    function addRandomTicket() {
+        const id = Date.now();
+        const ticket = { id: id, grid: Array(5).fill(null).map(() => Array(5).fill(null)) };
+
+        // Zufällige Zahlen für jede Spalte generieren
+        for (let c = 0; c < 5; c++) {
+            const rule = columnRules[c];
+            const availableNumbers = [];
+            for (let i = rule.min; i <= rule.max; i++) {
+                availableNumbers.push(i);
+            }
+
+            // Shuffle und nimm die ersten 5
+            availableNumbers.sort(() => Math.random() - 0.5);
+
+            for (let r = 0; r < 5; r++) {
+                ticket.grid[r][c] = availableNumbers[r];
+            }
+        }
+
+        tickets.push(ticket);
+        recreateTicketUI(ticket);
+        saveToLocalStorage();
+    }
+
+    // --- SETUP LOGIC ---
+
+    function addNewTicket() {
+        const id = Date.now();
+        const ticketDiv = document.createElement('div');
+        ticketDiv.className = 'ticket-wrapper';
+        ticketDiv.id = `ticket-setup-${id}`;
+
+        let html = `<h3>Los #${tickets.length + 1} <button class="delete" onclick="removeTicket(${id})">Löschen</button></h3>`;
+
+        // B I N G O Header
+        html += `<div class="bingo-header">`;
+        html += `<div class="bingo-header-cell">B</div>`;
+        html += `<div class="bingo-header-cell">I</div>`;
+        html += `<div class="bingo-header-cell">N</div>`;
+        html += `<div class="bingo-header-cell">G</div>`;
+        html += `<div class="bingo-header-cell">O</div>`;
+        html += `</div>`;
+
+        html += `<div class="bingo-ticket">`;
+
+        // Spaltenweise Eingabe-Reihenfolge: erst Spalte 0 komplett, dann Spalte 1, etc.
+        for (let c = 0; c < 5; c++) {
+            for (let r = 0; r < 5; r++) {
+                // KEIN Joker mehr in der Mitte!
+                const tabindex = c * 5 + r + 1;
+                html += `<div class="bingo-cell" style="grid-column: ${c+1}; grid-row: ${r+1};">
+                    <input type="number"
+                           inputmode="numeric"
+                           class="bingo-input"
+                           data-ticket="${id}"
+                           data-r="${r}"
+                           data-c="${c}"
+                           tabindex="${tabindex}"
+                           placeholder="-"
+                           min="1"
+                           max="99"
+                           maxlength="2"
+                           onblur="validateInput(this); saveToLocalStorage();"
+                           oninput="limitInput(this)">
+                </div>`;
+            }
+        }
+        html += `</div>`;
+        html += `<div id="error-${id}" class="error-message hidden"></div>`;
+
+        ticketDiv.innerHTML = html;
+        document.getElementById('tickets-container').appendChild(ticketDiv);
+
+        tickets.push({ id: id, grid: Array(5).fill(null).map(() => Array(5).fill(null)) });
+        saveToLocalStorage();
+    }
+
+    function removeTicket(id) {
+        tickets = tickets.filter(t => t.id !== id);
+        document.getElementById(`ticket-setup-${id}`).remove();
+        saveToLocalStorage();
+    }
+
+    function limitInput(input) {
+        // Verhindert 3-stellige Zahlen
+        if (input.value.length > 2) {
+            input.value = input.value.slice(0, 2);
+        }
+    }
+
+    function validateInput(input) {
+        const id = parseInt(input.dataset.ticket);
+        const r = parseInt(input.dataset.r);
+        const c = parseInt(input.dataset.c);
+        const val = parseInt(input.value);
+
+        input.classList.remove('error');
+        const errorDiv = document.getElementById(`error-${id}`);
+
+        if (isNaN(val) || input.value === '') {
+            // Leeres Feld ist OK
+            return true;
+        }
+
+        // 1. Spalten-Validierung
+        const rule = columnRules[c];
+        if (val < rule.min || val > rule.max) {
+            input.classList.add('error');
+            errorDiv.classList.remove('hidden');
+            errorDiv.textContent = `❌ Spalte ${rule.name}: Nur Zahlen ${rule.min}-${rule.max} erlaubt!`;
+            return false;
+        }
+
+        // 2. Duplikat-Validierung innerhalb des gleichen Loses
+        const ticket = tickets.find(t => t.id === id);
+        if (ticket) {
+            for (let row = 0; row < 5; row++) {
+                for (let col = 0; col < 5; col++) {
+                    if (row === r && col === c) continue; // Aktuelle Zelle überspringen
+                    if (ticket.grid[row][col] === val) {
+                        input.classList.add('error');
+                        errorDiv.classList.remove('hidden');
+                        errorDiv.textContent = `❌ Die Zahl ${val} ist bereits auf diesem Los vorhanden!`;
+                        return false;
+                    }
+                }
+            }
+        }
+
+        // Alles OK
+        errorDiv.classList.add('hidden');
+        errorDiv.textContent = '';
+        return true;
+    }
+
+    function saveInputs() {
+        // Liest alle Inputs aus und speichert sie im tickets Array
+        let allValid = true;
+        const inputs = document.querySelectorAll('.bingo-input');
+
+        inputs.forEach(input => {
+            const id = parseInt(input.dataset.ticket);
+            const r = parseInt(input.dataset.r);
+            const c = parseInt(input.dataset.c);
+            const val = parseInt(input.value);
+
+            const ticket = tickets.find(t => t.id === id);
+            if (ticket) {
+                if (!isNaN(val)) {
+                    if (!validateInput(input)) {
+                        allValid = false;
+                    }
+                    ticket.grid[r][c] = val;
+                } else {
+                    ticket.grid[r][c] = null;
+                }
+            }
+        });
+
+        saveToLocalStorage();
+        return allValid;
+    }
+
+    // --- GAME LOGIC ---
+
+    function updateInputState() {
+        const input = document.getElementById('drawn-number-input');
+        const button = document.getElementById('add-number-btn');
+
+        if (drawnNumbers.length >= MAX_DRAWN_NUMBERS) {
+            input.disabled = true;
+            button.disabled = true;
+            input.placeholder = '';
+        } else {
+            input.disabled = false;
+            button.disabled = false;
+            input.placeholder = '';
+        }
+    }
+
+    function startShow() {
+        const valid = saveInputs();
+
+        if (!valid) {
+            alert('⚠️ Bitte korrigiere erst die Fehler in den Los-Zahlen!');
+            return;
+        }
+
+        isGameRunning = true;
+        document.getElementById('setup-screen').classList.add('hidden');
+        document.getElementById('game-screen').classList.remove('hidden');
+        document.getElementById('live-controls').style.display = 'block';
+        saveToLocalStorage();
+        renderDrawnNumbers();
+        renderGameTickets();
+    }
+
+    function backToSetup() {
+        isGameRunning = false;
+        document.getElementById('game-screen').classList.add('hidden');
+        document.getElementById('setup-screen').classList.remove('hidden');
+        document.getElementById('live-controls').style.display = 'none';
+        drawnNumbers = []; // Reset Spiel
+        document.getElementById('bingo-notification').style.display = 'none';
+        bingoNotificationClosed = false;
+        saveToLocalStorage();
+        renderDrawnNumbers();
+    }
+
+    function endShow() {
+        if (confirm('📺 Sendung beenden?\n\nDie gezogenen Zahlen werden gelöscht.')) {
+            // Frage ob auch die Lose gelöscht werden sollen
+            const deleteLoses = confirm('🎟️ Sollen auch alle Lose gelöscht werden?\n\n✅ JA = Alles löschen (frisch starten)\n❌ NEIN = Nur gezogene Zahlen löschen (Lose behalten)');
+
+            isGameRunning = false;
+            drawnNumbers = [];
+            bingoNotificationClosed = false;
+
+            if (deleteLoses) {
+                // Alle Lose auch löschen
+                tickets = [];
+                saveToLocalStorage();
+                alert('✅ Sendung beendet! Alle Daten wurden gelöscht.');
+                // Reload um UI sauber zurückzusetzen
+                location.reload();
+            } else {
+                // Nur gezogene Zahlen löschen
+                saveToLocalStorage();
+                alert('✅ Sendung beendet! Gezogene Zahlen wurden gelöscht, Lose bleiben erhalten.');
+                // Reload um UI sauber zurückzusetzen
+                location.reload();
+            }
+        }
+    }
+
+    function closeBingoNotification() {
+        bingoNotificationClosed = true;
+        document.getElementById('bingo-notification').style.display = 'none';
+    }
+
+    function renderGameTickets() {
+        const container = document.getElementById('game-tickets-display');
+        container.innerHTML = '';
+
+        let bingoTickets = [];
+        let bingoCount = 0;
+
+        tickets.forEach((ticket, index) => {
+            const bingoInfo = checkBingo(ticket.grid, drawnNumbers);
+            if (bingoInfo.hasBingo) {
+                bingoCount++;
+                bingoTickets.push({ ticketNumber: index + 1, count: bingoInfo.bingoCount });
+            }
+
+            const div = document.createElement('div');
+            div.className = 'bingo-ticket-wrapper';
+            div.id = `ticket-${index + 1}`;
+
+            let bingoLabel = '';
+            if (bingoInfo.hasBingo) {
+                if (bingoInfo.bingoCount === 1) {
+                    bingoLabel = '✅ BINGO!';
+                } else if (bingoInfo.bingoCount === 2) {
+                    bingoLabel = '✅✅ DOPPEL-BINGO!';
+                } else if (bingoInfo.bingoCount >= 3) {
+                    bingoLabel = '✅✅✅ DREIFACH-BINGO!';
+                }
+            }
+
+            div.innerHTML = `<h3>Los #${index + 1} ${bingoLabel}</h3>`;
+
+            // B I N G O Header
+            const headerDiv = document.createElement('div');
+            headerDiv.className = 'bingo-header';
+            headerDiv.innerHTML = `
+                <div class="bingo-header-cell">B</div>
+                <div class="bingo-header-cell">I</div>
+                <div class="bingo-header-cell">N</div>
+                <div class="bingo-header-cell">G</div>
+                <div class="bingo-header-cell">O</div>
+            `;
+            div.appendChild(headerDiv);
+
+            const gridDiv = document.createElement('div');
+            gridDiv.className = 'bingo-ticket';
+
+            // Farbliche Hervorhebung je nach Bingo-Anzahl
+            if (bingoInfo.hasBingo) {
+                if (bingoInfo.bingoCount === 1) {
+                    gridDiv.classList.add('ticket-single-bingo');
+                } else if (bingoInfo.bingoCount === 2) {
+                    gridDiv.classList.add('ticket-double-bingo');
+                } else if (bingoInfo.bingoCount >= 3) {
+                    gridDiv.classList.add('ticket-triple-bingo');
+                }
+                gridDiv.style.border = "5px solid white";
+            }
+
+            for (let r = 0; r < 5; r++) {
+                for (let c = 0; c < 5; c++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'bingo-cell';
+
+                    const num = ticket.grid[r][c];
+                    cell.innerText = num || '';
+                    if (num && drawnNumbers.includes(num)) {
+                        cell.classList.add('matched');
+                    }
+
+                    gridDiv.appendChild(cell);
+                }
+            }
+            div.appendChild(gridDiv);
+            container.appendChild(div);
+        });
+
+        const alertBox = document.getElementById('bingo-notification');
+
+        // Zeige Benachrichtigung nur wenn:
+        // 1. Es gibt Bingos UND
+        // 2. Die Benachrichtigung nicht manuell geschlossen wurde ODER es ist ein neues Bingo
+        if (bingoCount > 0) {
+            // Prüfe ob es neue Bingos gibt (Änderung seit letzter Ansage)
+            const currentBingoKey = bingoTickets.map(b => `${b.ticketNumber}:${b.count}`).sort().join(',');
+            const lastBingoKey = lastAnnouncedBingos.map(b => `${b.ticketNumber}:${b.count}`).sort().join(',');
+
+            if (currentBingoKey !== lastBingoKey) {
+                // Neues Bingo -> Benachrichtigung wieder zeigen
+                bingoNotificationClosed = false;
+            }
+
+            alertBox.style.display = bingoNotificationClosed ? 'none' : 'block';
+        } else {
+            alertBox.style.display = 'none';
+            bingoNotificationClosed = false; // Reset wenn keine Bingos mehr
+        }
+
+        // Meta-Navigation aktualisieren
+        renderMetaNavigation();
+
+        // Sprachausgabe für Bingo
+        announceBingo(bingoTickets);
+    }
+
+    function renderMetaNavigation() {
+        const container = document.getElementById('meta-tickets-container');
+        container.innerHTML = '';
+
+        tickets.forEach((ticket, index) => {
+            const metaTicket = document.createElement('div');
+            metaTicket.className = 'meta-ticket';
+            metaTicket.onclick = () => scrollToTicket(index + 1);
+
+            const bingoInfo = checkBingo(ticket.grid, drawnNumbers);
+            if (bingoInfo.hasBingo) {
+                metaTicket.classList.add('has-bingo');
+            }
+
+            // Label
+            const label = document.createElement('div');
+            label.className = 'meta-ticket-label';
+            label.textContent = `#${index + 1}`;
+            metaTicket.appendChild(label);
+
+            // Mini-Grid
+            const miniGrid = document.createElement('div');
+            miniGrid.className = 'meta-ticket-grid';
+
+            for (let r = 0; r < 5; r++) {
+                for (let c = 0; c < 5; c++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'meta-cell';
+
+                    const num = ticket.grid[r][c];
+                    if (num && drawnNumbers.includes(num)) {
+                        cell.classList.add('hit');
+                    }
+
+                    miniGrid.appendChild(cell);
+                }
+            }
+
+            metaTicket.appendChild(miniGrid);
+            container.appendChild(metaTicket);
+        });
+    }
+
+    function scrollToTicket(ticketNumber) {
+        const ticketElement = document.getElementById(`ticket-${ticketNumber}`);
+        if (ticketElement) {
+            ticketElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            // Kurze Highlight-Animation
+            ticketElement.style.transition = 'transform 0.3s';
+            ticketElement.style.transform = 'scale(1.02)';
+            setTimeout(() => {
+                ticketElement.style.transform = 'scale(1)';
+            }, 300);
+        }
+    }
+
+    function addNumber() {
+        // Prüfe das 22-Zahlen Limit
+        if (drawnNumbers.length >= MAX_DRAWN_NUMBERS) {
+            alert(`⚠️ Maximum von ${MAX_DRAWN_NUMBERS} Zahlen erreicht!`);
+            return;
+        }
+
+        const input = document.getElementById('drawn-number-input');
+        const num = parseInt(input.value);
+        if (num && num >= 1 && num <= 75) {
+            if (!drawnNumbers.includes(num)) {
+                drawnNumbers.push(num);
+                saveToLocalStorage();
+            }
+            input.value = '';
+            input.focus();
+
+            // Prüfe und aktualisiere Input-Status
+            updateInputState();
+
+            renderDrawnNumbers();
+            renderGameTickets();
+        }
+    }
+
+    function handleNumberClick(num) {
+        const cellId = `drawn-cell-${num}`;
+        const cell = document.getElementById(cellId);
+
+        if (!cell) return;
+
+        // Prüfe ob die Zahl bereits zum Löschen markiert ist
+        if (cell.classList.contains('delete-pending')) {
+            // Zweiter Klick: Zahl entfernen
+            const index = drawnNumbers.indexOf(num);
+            if (index > -1) {
+                drawnNumbers.splice(index, 1);
+            }
+
+            // Timer abbrechen
+            if (deleteTimers[num]) {
+                clearTimeout(deleteTimers[num]);
+                delete deleteTimers[num];
+            }
+
+            // Input-Status aktualisieren
+            updateInputState();
+
+            saveToLocalStorage();
+            renderDrawnNumbers();
+            renderMetaNavigation();
+            renderGameTickets();
+        } else {
+            // Erster Klick: Zahl rot markieren
+            cell.classList.add('delete-pending');
+
+            // Timer für automatisches Zurücksetzen (3 Sekunden)
+            deleteTimers[num] = setTimeout(() => {
+                const currentCell = document.getElementById(cellId);
+                if (currentCell) {
+                    currentCell.classList.remove('delete-pending');
+                }
+                delete deleteTimers[num];
+            }, 3000);
+        }
+    }
+
+    function renderDrawnNumbers() {
+        const container = document.getElementById('drawn-numbers-display');
+
+        if (drawnNumbers.length === 0) {
+            container.innerHTML = '';
+            return;
+        }
+
+        // Sortiere die Zahlen für bessere Übersicht
+        const sortedNumbers = [...drawnNumbers].sort((a, b) => a - b);
+
+        let html = '<h4>Gezogene Zahlen (' + drawnNumbers.length + '/' + MAX_DRAWN_NUMBERS + '):</h4>';
+        html += '<div class="drawn-numbers-grid">';
+
+        sortedNumbers.forEach(num => {
+            html += `<div class="drawn-number-cell" id="drawn-cell-${num}" onclick="handleNumberClick(${num})">${num}</div>`;
+        });
+
+        html += '</div>';
+        container.innerHTML = html;
+    }
+
+    // --- WIN LOGIC ---
+    function checkBingo(grid, drawn) {
+        // Hilfsfunktion: Ist Zelle markiert?
+        const isMarked = (r, c) => {
+            const num = grid[r][c];
+            return num && drawn.includes(num);
+        };
+
+        let bingoCount = 0;
+
+        // 1. Zeilen
+        for (let r = 0; r < 5; r++) {
+            if ([0,1,2,3,4].every(c => isMarked(r, c))) bingoCount++;
+        }
+        // 2. Spalten
+        for (let c = 0; c < 5; c++) {
+            if ([0,1,2,3,4].every(r => isMarked(r, c))) bingoCount++;
+        }
+        // 3. Diagonalen
+        if ([0,1,2,3,4].every(i => isMarked(i, i))) bingoCount++;
+        if ([0,1,2,3,4].every(i => isMarked(i, 4-i))) bingoCount++;
+
+        return {
+            hasBingo: bingoCount > 0,
+            bingoCount: bingoCount
+        };
+    }
+
+    // --- SPEECH SYNTHESIS ---
+    let lastAnnouncedBingos = [];
+
+    function announceBingo(bingoTickets) {
+        // Prüfe ob sich die Bingo-Situation geändert hat
+        const currentKey = bingoTickets.map(b => `${b.ticketNumber}:${b.count}`).sort().join(',');
+        const lastKey = lastAnnouncedBingos.map(b => `${b.ticketNumber}:${b.count}`).sort().join(',');
+
+        if (currentKey === lastKey) {
+            // Keine Änderung, nichts zu sagen
+            return;
+        }
+
+        lastAnnouncedBingos = [...bingoTickets];
+
+        if (bingoTickets.length === 0) {
+            return;
+        }
+
+        // Sprachausgabe vorbereiten
+        if ('speechSynthesis' in window) {
+            window.speechSynthesis.cancel(); // Vorherige Ausgabe abbrechen
+
+            bingoTickets.forEach((bingo, index) => {
+                setTimeout(() => {
+                    const utterance = new SpeechSynthesisUtterance();
+                    utterance.lang = 'de-DE';
+                    utterance.rate = 0.9;
+                    utterance.pitch = 1.2;
+                    utterance.volume = 1.0;
+
+                    if (bingo.count === 1) {
+                        utterance.text = `Bingo auf Los ${bingo.ticketNumber}`;
+                    } else if (bingo.count === 2) {
+                        utterance.text = `Doppel-Bingo auf Los ${bingo.ticketNumber}`;
+                    } else if (bingo.count >= 3) {
+                        utterance.text = `Dreifach-Bingo auf Los ${bingo.ticketNumber}`;
+                    }
+
+                    window.speechSynthesis.speak(utterance);
+                }, index * 1500); // Verzögerung zwischen mehreren Ansagen
+            });
+        }
+    }
+
+    // --- INITIALIZATION ---
+    window.addEventListener('DOMContentLoaded', () => {
+        checkDebugMode();
+        loadFromLocalStorage();
+        setupScrollToTopButton();
+    });
+
+    // --- SCROLL TO TOP BUTTON ---
+    function setupScrollToTopButton() {
+        const scrollBtn = document.getElementById('scroll-to-top');
+
+        window.addEventListener('scroll', () => {
+            if (window.pageYOffset > 300) {
+                scrollBtn.classList.add('visible');
+            } else {
+                scrollBtn.classList.remove('visible');
+            }
+        });
+    }
+
+    function scrollToTop() {
+        window.scrollTo({
+            top: 0,
+            behavior: 'smooth'
+        });
+    }
+</script>
+
+</body>
+</html>
