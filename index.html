@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mama's Bingo Helfer</title>
+    <script src='https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js'></script>
     <style>
         :root {
             --ndr-blue: #003774;
@@ -296,44 +297,79 @@
 
         .drawn-numbers-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(70px, 1fr));
+            grid-template-columns: repeat(5, 1fr);
             gap: 10px;
+            margin-top: 15px;
         }
 
-        .drawn-number-cell {
-            position: relative;
-            aspect-ratio: 1;
+        .drawn-column {
             display: flex;
-            align-items: center;
-            justify-content: center;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .drawn-column-header {
             background: var(--ndr-blue);
             color: white;
             font-size: 1.8rem;
             font-weight: bold;
-            border-radius: 10px;
+            padding: 10px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .drawn-column-numbers {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .drawn-number-cell {
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 50px;
+            height: 50px;
+            margin: 0 auto;
+            background: radial-gradient(circle at 35% 35%, #ffffff, #e8e8e8 45%, #d0d0d0 65%, #b8b8b8);
+            color: #000000;
+            font-size: 1.4rem;
+            font-weight: bold;
+            border-radius: 50%;
+            border: 2px solid #000000;
             cursor: pointer;
             touch-action: manipulation;
             transition: all 0.2s;
-            min-height: 70px;
+            box-shadow:
+                0 4px 8px rgba(0, 0, 0, 0.3),
+                inset 0 -2px 4px rgba(0, 0, 0, 0.2),
+                inset 0 2px 4px rgba(255, 255, 255, 0.5);
         }
 
         .drawn-number-cell:active {
             transform: scale(0.95);
+            box-shadow:
+                0 2px 4px rgba(0, 0, 0, 0.3),
+                inset 0 -1px 2px rgba(0, 0, 0, 0.2),
+                inset 0 1px 2px rgba(255, 255, 255, 0.5);
         }
 
         .drawn-number-cell.delete-pending {
-            background: #e74c3c;
+            background: radial-gradient(circle at 35% 35%, #ff9999, #ff6666 45%, #e74c3c 65%, #c0392b);
+            border-color: #8b0000;
         }
 
         .drawn-number-cell.delete-pending::after {
             content: '🗑️';
             position: absolute;
-            font-size: 2.5rem;
-            opacity: 0.3;
+            font-size: 1.5rem;
+            opacity: 0.4;
             pointer-events: none;
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
+            filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.5));
         }
 
         .bingo-alert {
@@ -425,6 +461,150 @@
             input.bingo-input {
                 font-size: 1.6rem;
             }
+            .drawn-column-header {
+                font-size: 1.5rem;
+                padding: 8px;
+            }
+            .drawn-number-cell {
+                font-size: 1.2rem;
+                width: 45px;
+                height: 45px;
+            }
+            .drawn-number-cell.delete-pending::after {
+                font-size: 1.3rem;
+            }
+            .drawn-numbers-grid {
+                gap: 8px;
+            }
+            .drawn-column-numbers {
+                gap: 8px;
+            }
+        }
+
+        /* --- OCR Modal --- */
+        #ocr-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            z-index: 2000;
+            display: none;
+            overflow-y: auto;
+        }
+
+        #ocr-modal.active {
+            display: block;
+        }
+
+        .ocr-content {
+            max-width: 800px;
+            margin: 20px auto;
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+        }
+
+        #ocr-preview {
+            width: 100%;
+            max-width: 500px;
+            border: 3px solid var(--ndr-blue);
+            border-radius: 10px;
+            margin: 15px auto;
+            display: block;
+        }
+
+        #ocr-file-input {
+            display: none;
+        }
+
+        .ocr-button-group {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin: 15px 0;
+        }
+
+        #ocr-progress {
+            margin: 20px 0;
+            text-align: center;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 30px;
+            background: #ecf0f1;
+            border-radius: 15px;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: var(--ndr-blue);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .ocr-grid-preview {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 5px;
+            margin: 20px 0;
+        }
+
+        .ocr-grid-preview input {
+            width: 100%;
+            padding: 15px;
+            text-align: center;
+            font-size: 1.8rem;
+            font-weight: bold;
+            border: 2px solid #ccc;
+            border-radius: 8px;
+            cursor: move;
+            touch-action: none;
+            user-select: none;
+            transition: all 0.2s ease;
+        }
+
+        .ocr-grid-preview input.ocr-error {
+            background: #ffcccc;
+            border-color: #e74c3c;
+        }
+
+        /* Drag & Drop Styles */
+        .ocr-grid-preview input {
+            cursor: move;
+            touch-action: none;
+            user-select: none;
+        }
+
+        .ocr-grid-preview input.dragging {
+            opacity: 0.5;
+            background: #e3f2fd;
+            border-color: var(--ndr-blue);
+            border-width: 3px;
+        }
+
+        .ocr-grid-preview input.drag-over {
+            background: #c8e6c9;
+            border-color: var(--match);
+            border-width: 3px;
+        }
+
+        .drag-instruction {
+            background: #e3f2fd;
+            padding: 12px;
+            border-radius: 8px;
+            margin: 10px 0;
+            border-left: 4px solid var(--ndr-blue);
+            font-size: 1.3rem;
+        }
+
+        .camera-button {
+            background-color: #9b59b6 !important;
         }
     </style>
 </head>
@@ -438,6 +618,7 @@
 
     <button onclick="addNewTicket()">+ Neues Los hinzufügen</button>
     <button id="debug-random-ticket" onclick="addRandomTicket()" style="background-color: #9b59b6; display: none;">🎲 Zufälliges Los</button>
+    <button id="debug-camera-button" class="camera-button" onclick="openOCRModal()" style="display: none;">📷 Los fotografieren</button>
     <br><br>
     <hr>
     <button onclick="startShow()" style="background-color: var(--match); font-size: 1.8rem;">📺 Sendung starten!</button>
@@ -468,6 +649,71 @@
 </div>
 
 <button id="scroll-to-top" onclick="scrollToTop()" title="Nach oben">↑</button>
+
+<!-- OCR Modal -->
+<div id="ocr-modal">
+    <div class="ocr-content">
+        <h2>📷 Los fotografieren</h2>
+        <p>Fotografiere dein Bingo-Los oder wähle ein Foto aus.</p>
+
+        <div style="background: #fff3cd; padding: 15px; border-radius: 10px; margin: 15px 0; border-left: 5px solid #ffc107;">
+            <strong>💡 Tipps für beste Erkennung:</strong>
+            <ul style="text-align: left; margin: 10px 0; font-size: 1.2rem;">
+                <li>⭐ <strong>WICHTIG:</strong> Blauer "B I N G O" Header muss im Bild sein!</li>
+                <li>Los <strong>flach</strong> auf den Tisch legen</li>
+                <li><strong>Gerade</strong> von oben fotografieren</li>
+                <li><strong>Gutes Licht</strong> (kein Schatten)</li>
+                <li><strong>Komplett</strong> im Bild - Header + alle 25 Zahlen</li>
+                <li>Kamera <strong>scharf</strong> stellen (antippen)</li>
+            </ul>
+        </div>
+
+        <div class="ocr-button-group">
+            <button onclick="triggerCamera()">📷 Kamera öffnen</button>
+            <button onclick="triggerFileSelect()">🖼️ Foto auswählen</button>
+            <button onclick="closeOCRModal()" style="background-color: #7f8c8d;">❌ Abbrechen</button>
+        </div>
+
+        <input type="file" id="ocr-file-input" accept="image/*" capture="environment" onchange="handleImageUpload(event)">
+
+        <img id="ocr-preview" src="" alt="Bingo-Los Vorschau" style="display: none;">
+
+        <div id="ocr-progress" style="display: none;">
+            <h3>🔍 Zahlen werden erkannt...</h3>
+            <div class="progress-bar">
+                <div class="progress-fill" id="ocr-progress-fill"></div>
+            </div>
+            <p id="ocr-status">Bild wird verarbeitet...</p>
+        </div>
+
+        <div id="ocr-result" style="display: none;">
+            <h3>✏️ Erkannte Zahlen überprüfen</h3>
+            <p>Bitte prüfe die Zahlen und korrigiere falls nötig.</p>
+
+            <div class="drag-instruction">
+                <strong>🔄 Zahlen verschieben:</strong><br>
+                Tippe eine Zahl an und ziehe sie an die richtige Position!
+            </div>
+
+            <!-- BINGO Header -->
+            <div class="bingo-header" style="margin-bottom: 10px;">
+                <div class="bingo-header-cell">B</div>
+                <div class="bingo-header-cell">I</div>
+                <div class="bingo-header-cell">N</div>
+                <div class="bingo-header-cell">G</div>
+                <div class="bingo-header-cell">O</div>
+            </div>
+
+            <div class="ocr-grid-preview" id="ocr-grid"></div>
+
+            <div class="ocr-button-group">
+                <button onclick="acceptOCRResult()" style="background-color: var(--match); font-size: 1.8rem;">✅ Los übernehmen</button>
+                <button onclick="retryOCR()" style="background-color: #e67e22;">🔄 Nochmal versuchen</button>
+                <button onclick="closeOCRModal()" style="background-color: #7f8c8d;">❌ Abbrechen</button>
+            </div>
+        </div>
+    </div>
+</div>
 
 <script>
     // Struktur: Array von Objekten. Jedes Objekt hat ein 2D Array (5x5)
@@ -598,6 +844,7 @@
         isDebugMode = window.location.hash === '#debug';
         if (isDebugMode) {
             document.getElementById('debug-random-ticket').style.display = 'inline-block';
+            document.getElementById('debug-camera-button').style.display = 'inline-block';
             console.log('🐛 Debug-Modus aktiviert');
         }
     }
@@ -798,6 +1045,9 @@
         saveToLocalStorage();
         renderDrawnNumbers();
         renderGameTickets();
+
+        // Scroll nach oben
+        window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
     function backToSetup() {
@@ -1078,14 +1328,46 @@
             return;
         }
 
-        // Sortiere die Zahlen für bessere Übersicht
-        const sortedNumbers = [...drawnNumbers].sort((a, b) => a - b);
+        // Gruppiere Zahlen nach Spalten in Zugreihenfolge
+        const columns = {
+            B: [], // 1-15
+            I: [], // 16-30
+            N: [], // 31-45
+            G: [], // 46-60
+            O: []  // 61-75
+        };
+
+        // Zahlen in der Zugreihenfolge den Spalten zuordnen
+        drawnNumbers.forEach(num => {
+            if (num >= 1 && num <= 15) {
+                columns.B.push(num);
+            } else if (num >= 16 && num <= 30) {
+                columns.I.push(num);
+            } else if (num >= 31 && num <= 45) {
+                columns.N.push(num);
+            } else if (num >= 46 && num <= 60) {
+                columns.G.push(num);
+            } else if (num >= 61 && num <= 75) {
+                columns.O.push(num);
+            }
+        });
 
         let html = '<h4>Gezogene Zahlen (' + drawnNumbers.length + '/' + MAX_DRAWN_NUMBERS + '):</h4>';
         html += '<div class="drawn-numbers-grid">';
 
-        sortedNumbers.forEach(num => {
-            html += `<div class="drawn-number-cell" id="drawn-cell-${num}" onclick="handleNumberClick(${num})">${num}</div>`;
+        // Erstelle für jeden Buchstaben eine Spalte
+        ['B', 'I', 'N', 'G', 'O'].forEach(letter => {
+            html += '<div class="drawn-column">';
+            html += `<div class="drawn-column-header">${letter}</div>`;
+            html += '<div class="drawn-column-numbers">';
+
+            // Zahlen in Zugreihenfolge (nicht sortiert!)
+            columns[letter].forEach(num => {
+                html += `<div class="drawn-number-cell" id="drawn-cell-${num}" onclick="handleNumberClick(${num})">${num}</div>`;
+            });
+
+            html += '</div>'; // drawn-column-numbers
+            html += '</div>'; // drawn-column
         });
 
         html += '</div>';
@@ -1170,7 +1452,21 @@
         checkDebugMode();
         loadFromLocalStorage();
         setupScrollToTopButton();
+        setupDrawnNumberInput();
     });
+
+    // --- Setup für Zahlen-Eingabefeld ---
+    function setupDrawnNumberInput() {
+        const input = document.getElementById('drawn-number-input');
+        if (input) {
+            input.addEventListener('keydown', (event) => {
+                if (event.key === 'Enter') {
+                    event.preventDefault();
+                    addNumber();
+                }
+            });
+        }
+    }
 
     // --- SCROLL TO TOP BUTTON ---
     function setupScrollToTopButton() {
@@ -1190,6 +1486,583 @@
             top: 0,
             behavior: 'smooth'
         });
+    }
+
+    // --- OCR FUNCTIONALITY ---
+    let ocrDetectedNumbers = Array(5).fill(null).map(() => Array(5).fill(null));
+    let currentImageData = null;
+
+    function openOCRModal() {
+        document.getElementById('ocr-modal').classList.add('active');
+        // Reset
+        document.getElementById('ocr-preview').style.display = 'none';
+        document.getElementById('ocr-progress').style.display = 'none';
+        document.getElementById('ocr-result').style.display = 'none';
+        ocrDetectedNumbers = Array(5).fill(null).map(() => Array(5).fill(null));
+    }
+
+    function closeOCRModal() {
+        document.getElementById('ocr-modal').classList.remove('active');
+        currentImageData = null;
+    }
+
+    function triggerCamera() {
+        const input = document.getElementById('ocr-file-input');
+        input.setAttribute('capture', 'environment');
+        input.click();
+    }
+
+    function triggerFileSelect() {
+        const input = document.getElementById('ocr-file-input');
+        input.removeAttribute('capture');
+        input.click();
+    }
+
+    function handleImageUpload(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            currentImageData = e.target.result;
+            const preview = document.getElementById('ocr-preview');
+            preview.src = currentImageData;
+            preview.style.display = 'block';
+
+            // Starte OCR
+            performOCR(currentImageData);
+        };
+        reader.readAsDataURL(file);
+    }
+
+    async function preprocessImage(imageData) {
+        return new Promise((resolve) => {
+            const img = new Image();
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+
+                // Vergrößere das Bild für bessere Erkennung (2x Scale)
+                const scale = 2;
+                canvas.width = img.width * scale;
+                canvas.height = img.height * scale;
+
+                ctx.scale(scale, scale);
+                ctx.drawImage(img, 0, 0);
+
+                // 1. In Graustufen konvertieren
+                let imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                const data = imageData.data;
+
+                for (let i = 0; i < data.length; i += 4) {
+                    const gray = data[i] * 0.299 + data[i + 1] * 0.587 + data[i + 2] * 0.114;
+                    data[i] = data[i + 1] = data[i + 2] = gray;
+                }
+
+                ctx.putImageData(imageData, 0, 0);
+
+                // 2. Kontrast erhöhen
+                imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                const contrastFactor = 2.0; // Erhöht auf 2.0 für stärkeren Kontrast
+
+                for (let i = 0; i < data.length; i += 4) {
+                    data[i] = ((data[i] - 128) * contrastFactor) + 128;
+                    data[i + 1] = ((data[i + 1] - 128) * contrastFactor) + 128;
+                    data[i + 2] = ((data[i + 2] - 128) * contrastFactor) + 128;
+                }
+
+                ctx.putImageData(imageData, 0, 0);
+
+                // 3. Binarisierung (Schwellwert) - macht Zahlen klarer
+                imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                for (let i = 0; i < data.length; i += 4) {
+                    const gray = data[i];
+                    // Schwellwert: Alles über 140 wird weiß, darunter schwarz
+                    const binary = gray > 140 ? 255 : 0;
+                    data[i] = data[i + 1] = data[i + 2] = binary;
+                }
+
+                ctx.putImageData(imageData, 0, 0);
+
+                // Zurück als Data URL
+                resolve(canvas.toDataURL('image/png'));
+            };
+            img.src = imageData;
+        });
+    }
+
+    async function performOCR(imageData) {
+        // Zeige Progress
+        document.getElementById('ocr-progress').style.display = 'block';
+        document.getElementById('ocr-result').style.display = 'none';
+
+        const progressFill = document.getElementById('ocr-progress-fill');
+        const statusText = document.getElementById('ocr-status');
+
+        try {
+            statusText.textContent = 'Bild wird vorbereitet...';
+            progressFill.style.width = '5%';
+
+            // Vorverarbeitung des Bildes
+            const processedImage = await preprocessImage(imageData);
+
+            statusText.textContent = 'Tesseract wird initialisiert...';
+            progressFill.style.width = '10%';
+
+            const worker = await Tesseract.createWorker('deu', 1, {
+                logger: (m) => {
+                    if (m.status === 'recognizing text') {
+                        const progress = Math.round(m.progress * 100);
+                        progressFill.style.width = `${10 + progress * 0.3}%`;
+                        statusText.textContent = `Analysiere Bild... ${progress}%`;
+                    }
+                }
+            });
+
+            // SCHRITT 1: Suche nach BINGO Header für Orientierung
+            statusText.textContent = 'Suche BINGO Header...';
+            progressFill.style.width = '40%';
+
+            await worker.setParameters({
+                tessedit_char_whitelist: 'BINGO ',
+                tessedit_pageseg_mode: Tesseract.PSM.AUTO,
+            });
+
+            let bestRotation = 0;
+            let foundBingo = false;
+            let rotatedImage = processedImage;
+
+            // Teste verschiedene Rotationen und suche BINGO
+            for (let angle of [0, 90, 180, 270]) {
+                const testImage = angle === 0 ? processedImage : await rotateImage(processedImage, angle);
+                const { data: { text } } = await worker.recognize(testImage);
+
+                console.log(`Rotation ${angle}°:`, text);
+
+                // Prüfe ob BINGO im Text vorkommt (in richtiger Reihenfolge)
+                if (text.includes('BINGO') || text.includes('B I N G O') ||
+                    (text.includes('B') && text.includes('I') && text.includes('N') &&
+                     text.includes('G') && text.includes('O'))) {
+                    bestRotation = angle;
+                    rotatedImage = testImage;
+                    foundBingo = true;
+                    console.log(`✅ BINGO gefunden bei ${angle}°`);
+                    break;
+                }
+            }
+
+            if (foundBingo) {
+                statusText.textContent = `✅ BINGO Header gefunden! (${bestRotation}° gedreht)`;
+            } else {
+                statusText.textContent = '⚠️ BINGO Header nicht gefunden, fahre trotzdem fort...';
+                console.log('BINGO Header nicht gefunden, nutze Original');
+            }
+
+            progressFill.style.width = '50%';
+
+            // SCHRITT 2: Erkenne Zahlen mit mehreren Tesseract-Durchläufen
+            statusText.textContent = 'Erkenne Zahlen im Grid (Durchgang 1/3)...';
+
+            // Teste mehrere PSM-Modi für bessere Erkennung
+            const psmModes = [
+                { mode: Tesseract.PSM.SPARSE_TEXT, name: 'Spärlicher Text' },
+                { mode: Tesseract.PSM.SINGLE_BLOCK, name: 'Einzelner Block' },
+                { mode: Tesseract.PSM.AUTO, name: 'Automatisch' }
+            ];
+
+            let allNumbers = [];
+            let progressStep = 0;
+
+            for (const { mode, name } of psmModes) {
+                progressStep++;
+                statusText.textContent = `Erkenne Zahlen (${name}, ${progressStep}/3)...`;
+                progressFill.style.width = `${50 + (progressStep * 15)}%`;
+
+                await worker.setParameters({
+                    tessedit_char_whitelist: '0123456789',
+                    tessedit_pageseg_mode: mode,
+                });
+
+                const { data: { text } } = await worker.recognize(rotatedImage);
+                console.log(`OCR Durchgang ${progressStep} (${name}):`, text);
+
+                // Extrahiere Zahlen aus diesem Durchgang
+                const numbers = (text.match(/\d+/g) || [])
+                    .map(n => parseInt(n, 10))
+                    .filter(n => n >= 1 && n <= 75);
+
+                allNumbers.push(...numbers);
+                console.log(`Durchgang ${progressStep} gefunden:`, numbers);
+            }
+
+            await worker.terminate();
+
+            // Entferne Duplikate aber behalte alle validen Zahlen
+            const uniqueNumbers = [...new Set(allNumbers)];
+            console.log('Alle erkannten Zahlen (kombiniert):', uniqueNumbers);
+
+            progressFill.style.width = '100%';
+            statusText.textContent = `Fertig! ${uniqueNumbers.length} Zahlen gefunden...`;
+
+            // Verarbeite erkannten Text
+            processOCRText(uniqueNumbers.join(' '));
+
+        } catch (error) {
+            console.error('OCR Fehler:', error);
+            statusText.textContent = '❌ Fehler bei der Erkennung. Bitte versuche es nochmal.';
+            progressFill.style.width = '0%';
+            setTimeout(() => {
+                document.getElementById('ocr-progress').style.display = 'none';
+            }, 3000);
+        }
+    }
+
+    async function rotateImage(imageData, degrees) {
+        return new Promise((resolve) => {
+            const img = new Image();
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+
+                // Rotiere Canvas
+                if (degrees === 90 || degrees === 270) {
+                    canvas.width = img.height;
+                    canvas.height = img.width;
+                } else {
+                    canvas.width = img.width;
+                    canvas.height = img.height;
+                }
+
+                ctx.translate(canvas.width / 2, canvas.height / 2);
+                ctx.rotate((degrees * Math.PI) / 180);
+                ctx.drawImage(img, -img.width / 2, -img.height / 2);
+
+                resolve(canvas.toDataURL('image/png'));
+            };
+            img.src = imageData;
+        });
+    }
+
+    function processOCRText(text) {
+        if (!text) {
+            alert('❌ Keine Zahlen erkannt. Tipps:\n\n• Los flach auflegen\n• Gute Beleuchtung\n• Alle Zahlen im Bild\n• Kamera scharf stellen');
+            document.getElementById('ocr-progress').style.display = 'none';
+            return;
+        }
+
+        // Extrahiere alle Zahlen aus dem Text
+        const matches = text.match(/\d+/g);
+
+        if (!matches || matches.length === 0) {
+            alert('❌ Keine Zahlen erkannt. Bitte versuche es mit einem klareren Foto.');
+            document.getElementById('ocr-progress').style.display = 'none';
+            return;
+        }
+
+        // Parse Zahlen und entferne führende Nullen, filtere ungültige Zahlen
+        let parsedNumbers = matches
+            .map(n => parseInt(n, 10))
+            .filter(n => n >= 1 && n <= 75);
+
+        // Entferne Duplikate
+        parsedNumbers = [...new Set(parsedNumbers)];
+
+        console.log('Erkannte Zahlen:', parsedNumbers);
+
+        if (parsedNumbers.length < 10) {
+            const retry = confirm(`⚠️ Nur ${parsedNumbers.length} Zahlen erkannt.\n\nTipps für bessere Erkennung:\n• Los gerade halten\n• Besseres Licht\n• Näher ran zoomen\n\nNochmal versuchen?`);
+            if (retry) {
+                document.getElementById('ocr-progress').style.display = 'none';
+                retryOCR();
+                return;
+            }
+        }
+
+        // Sortiere Zahlen nach Spalten für intelligente Verteilung
+        const numbersByColumn = {
+            B: parsedNumbers.filter(n => n >= 1 && n <= 15),
+            I: parsedNumbers.filter(n => n >= 16 && n <= 30),
+            N: parsedNumbers.filter(n => n >= 31 && n <= 45),
+            G: parsedNumbers.filter(n => n >= 46 && n <= 60),
+            O: parsedNumbers.filter(n => n >= 61 && n <= 75)
+        };
+
+        console.log('Zahlen nach Spalten:', numbersByColumn);
+
+        // Initialisiere leeres Grid
+        ocrDetectedNumbers = Array(5).fill(null).map(() => Array(5).fill(null));
+
+        // Verteile Zahlen spaltenweise
+        const columns = ['B', 'I', 'N', 'G', 'O'];
+        columns.forEach((col, colIndex) => {
+            const nums = numbersByColumn[col];
+            nums.forEach((num, rowIndex) => {
+                if (rowIndex < 5) {
+                    ocrDetectedNumbers[rowIndex][colIndex] = num;
+                }
+            });
+        });
+
+        // Zeige Ergebnis
+        displayOCRResult();
+    }
+
+    function findBestColumn(num) {
+        for (let c = 0; c < 5; c++) {
+            const rule = columnRules[c];
+            if (num >= rule.min && num <= rule.max) {
+                return c;
+            }
+        }
+        return -1;
+    }
+
+    function displayOCRResult() {
+        document.getElementById('ocr-progress').style.display = 'none';
+        document.getElementById('ocr-result').style.display = 'block';
+
+        const grid = document.getElementById('ocr-grid');
+        grid.innerHTML = '';
+
+        // Erstelle Input-Grid spaltenweise
+        for (let c = 0; c < 5; c++) {
+            for (let r = 0; r < 5; r++) {
+                const input = document.createElement('input');
+                input.type = 'number';
+                input.inputmode = 'numeric';
+                input.min = '1';
+                input.max = '75';
+                input.value = ocrDetectedNumbers[r][c] || '';
+                input.dataset.row = r;
+                input.dataset.col = c;
+                input.style.gridColumn = c + 1;
+                input.style.gridRow = r + 1;
+
+                // Validierung
+                input.addEventListener('blur', () => validateOCRInput(input));
+                input.addEventListener('input', () => {
+                    const val = parseInt(input.value);
+                    if (!isNaN(val)) {
+                        ocrDetectedNumbers[r][c] = val;
+                    } else {
+                        ocrDetectedNumbers[r][c] = null;
+                    }
+                });
+
+                // Drag & Drop Events
+                setupDragAndDrop(input);
+
+                grid.appendChild(input);
+            }
+        }
+    }
+
+    // --- DRAG & DROP FUNCTIONALITY ---
+    let draggedElement = null;
+    let touchStartPos = { x: 0, y: 0 };
+
+    function setupDragAndDrop(element) {
+        // Desktop: Mouse Events
+        element.draggable = true;
+
+        element.addEventListener('dragstart', (e) => {
+            draggedElement = element;
+            element.classList.add('dragging');
+            e.dataTransfer.effectAllowed = 'move';
+        });
+
+        element.addEventListener('dragend', () => {
+            element.classList.remove('dragging');
+            draggedElement = null;
+        });
+
+        element.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+            if (draggedElement !== element) {
+                element.classList.add('drag-over');
+            }
+        });
+
+        element.addEventListener('dragleave', () => {
+            element.classList.remove('drag-over');
+        });
+
+        element.addEventListener('drop', (e) => {
+            e.preventDefault();
+            element.classList.remove('drag-over');
+
+            if (draggedElement && draggedElement !== element) {
+                swapInputValues(draggedElement, element);
+            }
+        });
+
+        // Mobile: Touch Events
+        element.addEventListener('touchstart', (e) => {
+            draggedElement = element;
+            element.classList.add('dragging');
+
+            const touch = e.touches[0];
+            touchStartPos = {
+                x: touch.clientX,
+                y: touch.clientY
+            };
+
+            e.preventDefault();
+        }, { passive: false });
+
+        element.addEventListener('touchmove', (e) => {
+            if (!draggedElement) return;
+
+            const touch = e.touches[0];
+            const elementBelow = document.elementFromPoint(touch.clientX, touch.clientY);
+
+            // Entferne alle drag-over Klassen
+            document.querySelectorAll('.drag-over').forEach(el => {
+                el.classList.remove('drag-over');
+            });
+
+            // Füge drag-over zu Element unter Finger hinzu
+            if (elementBelow && elementBelow.classList.contains('bingo-input') === false &&
+                elementBelow.tagName === 'INPUT' && elementBelow !== draggedElement) {
+                elementBelow.classList.add('drag-over');
+            }
+
+            e.preventDefault();
+        }, { passive: false });
+
+        element.addEventListener('touchend', (e) => {
+            if (!draggedElement) return;
+
+            const touch = e.changedTouches[0];
+            const elementBelow = document.elementFromPoint(touch.clientX, touch.clientY);
+
+            // Entferne alle Klassen
+            element.classList.remove('dragging');
+            document.querySelectorAll('.drag-over').forEach(el => {
+                el.classList.remove('drag-over');
+            });
+
+            // Swap wenn auf anderem Input
+            if (elementBelow && elementBelow.tagName === 'INPUT' &&
+                elementBelow !== draggedElement && elementBelow.parentElement.id === 'ocr-grid') {
+                swapInputValues(draggedElement, elementBelow);
+            }
+
+            draggedElement = null;
+            e.preventDefault();
+        }, { passive: false });
+    }
+
+    function swapInputValues(element1, element2) {
+        // Tausche Werte
+        const val1 = element1.value;
+        const val2 = element2.value;
+
+        element1.value = val2;
+        element2.value = val1;
+
+        // Update Array
+        const r1 = parseInt(element1.dataset.row);
+        const c1 = parseInt(element1.dataset.col);
+        const r2 = parseInt(element2.dataset.row);
+        const c2 = parseInt(element2.dataset.col);
+
+        const temp = ocrDetectedNumbers[r1][c1];
+        ocrDetectedNumbers[r1][c1] = ocrDetectedNumbers[r2][c2];
+        ocrDetectedNumbers[r2][c2] = temp;
+
+        // Trigger Input Event für Update
+        element1.dispatchEvent(new Event('input'));
+        element2.dispatchEvent(new Event('input'));
+
+        // Validiere beide
+        validateOCRInput(element1);
+        validateOCRInput(element2);
+
+        // Visuelles Feedback
+        element1.style.transform = 'scale(1.1)';
+        element2.style.transform = 'scale(1.1)';
+        setTimeout(() => {
+            element1.style.transform = '';
+            element2.style.transform = '';
+        }, 200);
+    }
+
+    function validateOCRInput(input) {
+        const r = parseInt(input.dataset.row);
+        const c = parseInt(input.dataset.col);
+        const val = parseInt(input.value);
+
+        input.classList.remove('ocr-error');
+
+        if (isNaN(val) || input.value === '') {
+            return true;
+        }
+
+        // Spalten-Validierung
+        const rule = columnRules[c];
+        if (val < rule.min || val > rule.max) {
+            input.classList.add('ocr-error');
+            return false;
+        }
+
+        // Duplikat-Validierung
+        for (let row = 0; row < 5; row++) {
+            for (let col = 0; col < 5; col++) {
+                if (row === r && col === c) continue;
+                if (ocrDetectedNumbers[row][col] === val) {
+                    input.classList.add('ocr-error');
+                    return false;
+                }
+            }
+        }
+
+        return true;
+    }
+
+    function acceptOCRResult() {
+        // Validiere alle Felder
+        const inputs = document.querySelectorAll('#ocr-grid input');
+        let hasErrors = false;
+
+        inputs.forEach(input => {
+            if (!validateOCRInput(input)) {
+                hasErrors = true;
+            }
+        });
+
+        if (hasErrors) {
+            alert('⚠️ Bitte korrigiere die rot markierten Felder!');
+            return;
+        }
+
+        // Erstelle neues Ticket mit erkannten Zahlen
+        const id = Date.now();
+        const ticket = { id: id, grid: ocrDetectedNumbers.map(row => [...row]) };
+        tickets.push(ticket);
+        recreateTicketUI(ticket);
+        saveToLocalStorage();
+
+        // Schließe Modal
+        closeOCRModal();
+
+        // Bestätigung
+        alert('✅ Los erfolgreich hinzugefügt!');
+
+        // Scroll zum neuen Los
+        setTimeout(() => {
+            const newTicket = document.getElementById(`ticket-setup-${id}`);
+            if (newTicket) {
+                newTicket.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        }, 300);
+    }
+
+    function retryOCR() {
+        document.getElementById('ocr-result').style.display = 'none';
+        document.getElementById('ocr-preview').style.display = 'none';
+        ocrDetectedNumbers = Array(5).fill(null).map(() => Array(5).fill(null));
     }
 </script>
 
