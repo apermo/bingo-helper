@@ -21,7 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - CI: track `package-lock.json` for npm cache in E2E workflow
 - CI: add `.wp-env.json` for E2E WordPress environment
 
-## [0.1.0] - 2026-03-15
+## [0.1.0] - 2026-04-10
 
 ### Added
 
