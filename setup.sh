@@ -150,6 +150,9 @@ else
     # Update readme.txt for theme mode
     sedi 's|A WordPress plugin|A WordPress block theme|g' readme.txt
     sedi "s|/wp-content/plugins/${SLUG}/|/wp-content/themes/${SLUG}/|" readme.txt
+
+    # Switch wp-env.json to theme mode
+    sedi 's|"plugins"|"themes"|' .wp-env.json
 fi
 
 # Remove both dist files

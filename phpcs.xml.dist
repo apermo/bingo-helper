@@ -6,8 +6,11 @@
     <description>PHPCS configuration for plugin-name.</description>
 
     <file>.</file>
+    <exclude-pattern>.ddev/*</exclude-pattern>
     <exclude-pattern>vendor/*</exclude-pattern>
     <exclude-pattern>node_modules/*</exclude-pattern>
+    <!-- Stubs intentionally declare globally-namespaced WordPress classes. -->
+    <exclude-pattern>tests/stubs/*</exclude-pattern>
 
     <arg name="extensions" value="php"/>
 
