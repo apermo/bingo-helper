@@ -43,6 +43,12 @@
         "allow-plugins": {
             "dealerdirect/phpcodesniffer-composer-installer": true,
             "phpstan/extension-installer": true
+        },
+        "audit": {
+            "ignore": {
+                "PKSA-5jz8-6tcw-pbk4": "Affects PHPUnit versions required by the WP integration test suite; no fixed release is available for the pinned range.",
+                "PKSA-z3gr-8qht-p93v": "Affects PHPUnit versions required by the WP integration test suite; no fixed release is available for the pinned range."
+            }
         }
     }
 }
