@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.1] - 2026-04-18
+
+### Fixed
+
+- DDEV: move docroot to `.ddev/wordpress/` so WordPress core files no longer pollute the project root
+- DDEV: install `apermo/ddev-orchestrate` addon via pre-start hook so `ddev orchestrate` works on fresh clones and in CI
+- PHPCS: exclude `.ddev/` directory from coding-standards scan
+- Integration tests: skip gracefully when WP test environment is unavailable
+- Track `composer.lock` in repository for reproducible builds
+
+### Changed
+
+- CI: ignore PHPUnit advisories that block integration install
+- CI: track `package-lock.json` for npm cache in E2E workflow
+- CI: add `.wp-env.json` for E2E WordPress environment
+
 ## [0.4.0] - 2026-03-15
 
 ### Added
@@ -59,6 +75,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Workflow callers missing permissions (caused startup_failure)
 
+[0.5.1]: https://github.com/apermo/bingo-helper/compare/v0.5.0...v0.5.1
 [0.4.0]: https://github.com/apermo/template-wordpress/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/apermo/template-wordpress/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/apermo/template-wordpress/compare/v0.1.0...v0.2.0
